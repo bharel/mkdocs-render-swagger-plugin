@@ -10,4 +10,7 @@ Add the following lines to your mkdocs.yml:
 Enter `!!swagger <filename>!!` at the appropriate location inside a markdown file.
 
 
-<small>Credits to @aviramha for starting this project.</small>
+<small>
+Disclaimer: This plugin is unofficial, and is not sponsored, owned or endorsed by mkdocs, swagger, or any other 3rd party. 
+Credits to @aviramha for starting this project.
+</small>
