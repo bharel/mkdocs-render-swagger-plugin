@@ -11,6 +11,6 @@ Enter `!!swagger <filename>!!` at the appropriate location inside a markdown fil
 
 </br>
 <small>
-Disclaimer: This plugin is unofficial, and is not sponsored, owned or endorsed by mkdocs, swagger, or any other 3rd party. 
+Disclaimer: This plugin is unofficial, and is not sponsored, owned or endorsed by mkdocs, swagger, or any other 3rd party.</br>
 Credits to @aviramha for starting this project.
 </small>
