@@ -1,4 +1,5 @@
 import os
+import urllib.parse
 
 import mkdocs.plugins
 from pathlib import Path
@@ -43,14 +44,16 @@ def swagger_lib(config) -> dict:
     }
 
     extra_javascript = config.get('extra_javascript', [])
-    extra_css = config.get('extra_css')
+    extra_css = config.get('extra_css', [])
     for lib in extra_javascript:
-        if os.path.basename(lib) == 'swagger-ui-bundle.js':
+        if os.path.basename(urllib.parse.urlparse(lib).path) == 'swagger-ui-bundle.js':
             lib_swagger['js'] = lib
+            break
 
     for css in extra_css:
-        if os.path.basename(css) == 'swagger-ui.css':
+        if os.path.basename(urllib.parse.urlparse(css).path) == 'swagger-ui.css':
             lib_swagger['css'] = css
+            break
     return lib_swagger
 
 
