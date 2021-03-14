@@ -9,6 +9,21 @@ Add the following lines to your mkdocs.yml:
     
 Enter `!!swagger <filename>!!` at the appropriate location inside a markdown file.
 
+## Explicit declaration of the Swagger JS library
+
+You can explicitly specify the swagger-ui css and js dependencies if you wish to not use the unpkg CDN.
+
+Keep in mind, the filename has to be `swagger-ui.css` for the CSS and `swagger-ui-bundle.js` for the JS.
+
+To specify this use `extra_javascript` and `extra_css` in your mkdocs.yaml:
+```yaml
+extra_javascript:
+  - assets/js/swagger-ui-bundle.js
+
+extra_css:
+  - assets/css/swagger-ui.css
+```
+
 ## Contributing & Developing Locally
 
 After downloading and extracting the `.tar.gz`, install this package locally using `pip` and the `--editable` flag:
