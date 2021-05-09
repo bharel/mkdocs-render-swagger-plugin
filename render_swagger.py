@@ -8,9 +8,9 @@ import string
 import re
 from xml.sax.saxutils import escape
 
-USAGE_MSG = ("Usage: '!!swagger <filename>!!'. "
-             "File must exist locally and be placed next to the .md that contains "
-             "the swagger statement.")
+USAGE_MSG = ("Usage: '!!swagger <filename>!!' or '!!swagger-http <url>!!'. "
+             "File must either exist locally and be placed next to the .md that contains "
+             "the swagger statement, or be an http(s) URL.")
 
 TEMPLATE = string.Template("""
 
@@ -32,6 +32,9 @@ ERROR_TEMPLATE = string.Template("!! SWAGGER ERROR: $error !!")
 # Used for JS. Runs locally on end-user. RFI / LFI not possible, no security risk.
 # Restrict to local file.
 TOKEN = re.compile(r"!!swagger(?: (?P<path>[^\\/\s><&:]+))?!!")
+
+# HTTP(S) variant
+TOKEN_HTTP = re.compile(r"!!swagger-http(?: (?P<path>https?://[^\s]+))?!!")
 
 
 def swagger_lib(config) -> dict:
@@ -59,8 +62,12 @@ def swagger_lib(config) -> dict:
 
 class SwaggerPlugin(mkdocs.plugins.BasePlugin):
     def on_page_markdown(self, markdown, page, config, files):
-
+        is_http = False
         match = TOKEN.search(markdown)
+
+        if match is None:
+            match = TOKEN_HTTP.search(markdown)
+            is_http = True
 
         if match is None:
             return markdown
@@ -77,20 +84,23 @@ class SwaggerPlugin(mkdocs.plugins.BasePlugin):
         if path is None:
             return _error(USAGE_MSG)
 
-        try:
-            api_file = Path(page.file.abs_src_path).with_name(path)
-        except ValueError as exc:
-            return _error(f"Invalid path. {exc.args[0]}")
+        if is_http:
+            url = path
+        else:
+            try:
+                api_file = Path(page.file.abs_src_path).with_name(path)
+            except ValueError as exc:
+                return _error(f"Invalid path. {exc.args[0]}")
 
-        if not api_file.exists():
-            return _error(f"File {path} not found.")
+            if not api_file.exists():
+                return _error(f"File {path} not found.")
 
-        src_dir = api_file.parent
-        dest_dir = Path(page.file.abs_dest_path).parent
+            src_dir = api_file.parent
+            dest_dir = Path(page.file.abs_dest_path).parent
 
-        new_file = File(api_file.name, src_dir, dest_dir, False)
-        files.append(new_file)
-        url = Path(new_file.abs_dest_path).name
+            new_file = File(api_file.name, src_dir, dest_dir, False)
+            files.append(new_file)
+            url = Path(new_file.abs_dest_path).name
 
         lib = swagger_lib(config)
 
