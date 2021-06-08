@@ -8,12 +8,14 @@ Add the following lines to your mkdocs.yml:
 
     plugins:
       - render_swagger
-    
+
+### Referencing a local json
+
 Place an OpenAPI json in the same folder as the the `.md` file.
 
 Enter `!!swagger <filename>!!` at the appropriate location inside the markdown file.
 
-### Referencing external json
+### Referencing an external json
 
 You may reference an external OpenAPI json using the following syntax: `!!swagger-http <url>!!`.
 
