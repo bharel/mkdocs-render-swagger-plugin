@@ -17,8 +17,6 @@ Enter `!!swagger <filename>!!` at the appropriate location inside the markdown f
 
 You may reference an external OpenAPI json using the following syntax: `!!swagger-http <url>!!`.
 
-!!swagger-http <url>!!
-
 ## Explicit declaration of the Swagger JS library
 
 You can explicitly specify the swagger-ui css and js dependencies if you wish to not use the unpkg CDN.
