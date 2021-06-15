@@ -13,11 +13,11 @@ Add the following lines to your mkdocs.yml:
 
 Place an OpenAPI json in the same folder as the the `.md` file.
 
-Enter `!!swagger <filename>!!` at the appropriate location inside the markdown file.
+Enter `!!swagger [filename]!!` at the appropriate location inside the markdown file.
 
 ### Referencing an external json
 
-You may reference an external OpenAPI json using the following syntax: `!!swagger-http <url>!!`.
+You may reference an external OpenAPI json using the following syntax: `!!swagger-http [url]!!`.
 
 ## Explicit declaration of the Swagger JS library
 
