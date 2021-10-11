@@ -1,5 +1,5 @@
 # mkdocs-render-swagger-plugin
-This is the [Mkdocs](https://mkdocs.org) plugin for rendering swagger &amp; openapi schemas using [Swagger UI](https://swagger.io/tools/swagger-ui/). It is written in Python.
+This is the [Mkdocs](https://www.mkdocs.org) plugin for rendering swagger &amp; openapi schemas using [Swagger UI](https://swagger.io/tools/swagger-ui/). It is written in Python.
 
 ## Usage
 Install the plugin using `pip install mkdocs-render-swagger-plugin`.
