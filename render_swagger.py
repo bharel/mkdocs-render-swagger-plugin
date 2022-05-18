@@ -19,9 +19,9 @@ TEMPLATE = string.Template("""
 </div>
 <script src="$swagger_lib_js" charset="UTF-8"></script>
 <script>
-    const ui = SwaggerUIBundle({
-    url: '$path',
-    dom_id: '#swagger-ui',
+    SwaggerUIBundle({
+      url: '$path',
+      dom_id: '#swagger-ui',
     })
 </script>
 
