@@ -11,7 +11,7 @@ Add the following lines to your mkdocs.yml:
 
 ## Example
 
-Here's an [example](https://docs.scarf.sh/api-v2/) (Courtesy of Scarf.sh) for how the plugin renders swagger.
+Here's an [example](https://docs.scarf.sh/api-v2/) (courtesy of Scarf) for how the plugin renders swagger.
 
 ### Referencing a local json
 
