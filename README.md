@@ -9,6 +9,10 @@ Add the following lines to your mkdocs.yml:
     plugins:
       - render_swagger
 
+## Example
+
+Here's an [example](https://docs.scarf.sh/api-v2/) (Courtesy of Scarf.sh) for how the plugin renders swagger.
+
 ### Referencing a local json
 
 Place an OpenAPI json file in the same folder as the `.md` file.
