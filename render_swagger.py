@@ -42,8 +42,8 @@ def swagger_lib(config) -> dict:
     Provides the actual swagger library used
     """
     lib_swagger = {
-        'css': "https://unpkg.com/swagger-ui-dist@3/swagger-ui.css",
-        'js': "https://unpkg.com/swagger-ui-dist@3/swagger-ui-bundle.js"
+        'css': "https://unpkg.com/swagger-ui-dist@5/swagger-ui.css",
+        'js': "https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"
     }
 
     extra_javascript = config.get('extra_javascript', [])
