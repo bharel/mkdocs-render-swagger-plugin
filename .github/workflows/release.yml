@@ -21,7 +21,7 @@ jobs:
         run: |
           PY_VER=$(python -c "import render_swagger;print(render_swagger.__version__)")
           echo Python version - "$PY_VER"
-          TAG_VER=$(echo ${{ github.event.release.tag_name }} | cut -c 2-)
+          TAG_VER=$(echo ${{ github.event.release.tag_name }})
           echo Tag version "$TAG_VER"
           [[ $TAG_VER == $PY_VER ]]
       - name: Install twine
