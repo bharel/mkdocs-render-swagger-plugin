@@ -1,6 +1,11 @@
 # mkdocs-render-swagger-plugin
 This is the [Mkdocs](https://www.mkdocs.org) plugin for rendering swagger &amp; openapi schemas using [Swagger UI](https://swagger.io/tools/swagger-ui/). It is written in Python.
 
+[![GitHub branch checks state](https://img.shields.io/github/checks-status/bharel/mkdocs-render-swagger-plugin/main)](https://github.com/bharel/mkdocs-render-swagger-plugin/actions)
+[![PyPI](https://img.shields.io/pypi/v/asynciolimiter)](https://pypi.org/project/mkdocs-render-swagger-plugin/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/mkdocs-render-swagger-plugin)](https://pypi.org/project/mkdocs-render-swagger-plugin/)
+[![codecov](https://codecov.io/gh/bharel/mkdocs-render-swagger-plugin/branch/main/graph/badge.svg?token=GXV70TL21V)](https://codecov.io/gh/bharel/mkdocs-render-swagger-plugin)
+
 ## Usage
 Install the plugin using `pip install mkdocs-render-swagger-plugin`.
 
