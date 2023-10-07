@@ -24,6 +24,9 @@ jobs:
           TAG_VER=$(echo ${{ github.event.release.tag_name }})
           echo Tag version "$TAG_VER"
           [[ $TAG_VER == $PY_VER ]]
+          CFG_VER=$(grep version setup.cfg | cut -d '=' -f2 | xargs)
+          echo Config version "$CFG_VER"
+          [[ $CFG_VER == $PY_VER ]]
       - name: Install twine
         run: pip install twine
       - uses: AButler/upload-release-assets@v2.0
