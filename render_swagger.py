@@ -7,11 +7,15 @@ from xml.sax.saxutils import escape
 
 import mkdocs.plugins
 from mkdocs.config import config_options
+from mkdocs.config.base import Config as MkDocsConfig
 from mkdocs.structure.files import File
 
-USAGE_MSG = ("Usage: '!!swagger <filename>!!' or '!!swagger-http <url>!!'. "
-             "File must either exist locally and be placed next to the .md that contains "
-             "the swagger statement, or be an http(s) URL.")
+__version__ = "0.1.1"
+
+USAGE_MSG = (
+    "Usage: '!!swagger <filename>!!' or '!!swagger-http <url>!!'. "
+    "File must either exist locally and be placed next to the .md that "
+    "contains the swagger statement, or be an http(s) URL.")
 
 TEMPLATE = string.Template("""
 
@@ -30,60 +34,61 @@ TEMPLATE = string.Template("""
 
 ERROR_TEMPLATE = string.Template("!! SWAGGER ERROR: $error !!")
 
-# Used for JS. Runs locally on end-user. RFI / LFI not possible, no security risk.
-# Restrict to local file.
-TOKEN = re.compile(r"!!swagger(?: (?P<path>[^\\/\s><&:]+))?!!")
+# Used for JS. Runs locally on end-user.
+# RFI / LFI possible. Use with caution.
+TOKEN = re.compile(r"!!swagger(?: (?P<path>[^\s<>&:!]+))?!!")
 
 # HTTP(S) variant
-TOKEN_HTTP = re.compile(r"!!swagger-http(?: (?P<path>https?://[^\s]+))?!!")
+TOKEN_HTTP = re.compile(r"!!swagger-http(?: (?P<path>https?://[^\s!]+))?!!")
+
+DEFAULT_SWAGGER_LIB = {
+    'css': "https://unpkg.com/swagger-ui-dist@5/swagger-ui.css",
+    'js': "https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"
+}
 
 
 def swagger_lib(config) -> dict:
     """
     Provides the actual swagger library used
     """
-    lib_swagger = {
-        'css': "https://unpkg.com/swagger-ui-dist@5/swagger-ui.css",
-        'js': "https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"
-    }
-
+    lib_swagger = DEFAULT_SWAGGER_LIB.copy()
     extra_javascript = config.get('extra_javascript', [])
     extra_css = config.get('extra_css', [])
     for lib in extra_javascript:
-        if os.path.basename(urllib.parse.urlparse(lib).path) == 'swagger-ui-bundle.js':
+        if os.path.basename(
+                urllib.parse.urlparse(lib).path) == 'swagger-ui-bundle.js':
             import warnings
             warnings.warn(
                 "Please use the javascript configuration option for "
                 "mkdocs-render-swagger-plugin instead of extra_javascript.",
-                DeprecationWarning)
+                FutureWarning)
             lib_swagger['js'] = lib
             break
 
     for css in extra_css:
-        if os.path.basename(urllib.parse.urlparse(css).path) == 'swagger-ui.css':
+        if os.path.basename(
+                urllib.parse.urlparse(css).path) == 'swagger-ui.css':
             warnings.warn(
                 "Please use the css configuration option for "
                 "mkdocs-render-swagger-plugin instead of extra_css.",
-                DeprecationWarning)
+                FutureWarning)
             lib_swagger['css'] = css
             break
     return lib_swagger
 
 
-class SwaggerPlugin(mkdocs.plugins.BasePlugin):
-    config_scheme = (
-        ("javascript",
-         config_options.Optional(config_options.File(exists=True))),
-        ("css",
-         config_options.Optional(config_options.File(exists=True))),
-        ("allow_arbitrary_locations", config_options.Type(bool, default=False)),
-    )
+class SwaggerConfig(mkdocs.config.base.Config):
+    javascript = config_options.Type(str, default="")
+    css = config_options.Type(str, default="")
+    allow_arbitrary_locations = config_options.Type(bool, default=False)
 
-    def on_config(self, config, **kwargs):
+
+class SwaggerPlugin(mkdocs.plugins.BasePlugin[SwaggerConfig]):
+    def on_config(self, config: MkDocsConfig, **kwargs):
         lib = swagger_lib(config)
-        config.javascript = config.javascript or lib['js']
-        config.css = config.css or lib['css']
-        return super().on_config(config, **kwargs)
+        self.config.javascript = self.config.javascript or lib['js']
+        self.config.css = self.config.css or lib['css']
+        return config
 
     def on_page_markdown(self, markdown, page, config, files):
         is_http = False
@@ -100,8 +105,9 @@ class SwaggerPlugin(mkdocs.plugins.BasePlugin):
         post_token = markdown[match.end():]
 
         def _error(message):
-            return (pre_token + escape(ERROR_TEMPLATE.substitute(error=message)) +
-                    post_token)
+            return (
+                pre_token + escape(ERROR_TEMPLATE.substitute(error=message)) +
+                post_token)
 
         path = match.group("path")
 
@@ -111,9 +117,16 @@ class SwaggerPlugin(mkdocs.plugins.BasePlugin):
         if is_http:
             url = path
         else:
+            if "/" in path or "\\" in path:
+                if not self.config.allow_arbitrary_locations:
+                    return _error(
+                        "Arbitrary locations are not allowed due to RFI/LFI "
+                        "security risks. "
+                        "Please enable the 'allow_arbitrary_locations' "
+                        "configuration option to allow this.")
             try:
-                api_file = Path(page.file.abs_src_path).with_name(path)
-            except ValueError as exc:
+                api_file = Path(page.file.abs_src_path).parent / path
+            except ValueError as exc:  # pragma: no cover
                 return _error(f"Invalid path. {exc.args[0]}")
 
             if not api_file.exists():
@@ -123,11 +136,18 @@ class SwaggerPlugin(mkdocs.plugins.BasePlugin):
             dest_dir = Path(page.file.abs_dest_path).parent
 
             new_file = File(api_file.name, src_dir, dest_dir, False)
-            files.append(new_file)
             url = Path(new_file.abs_dest_path).name
 
+            if any(f.abs_src_path != new_file.abs_src_path and
+                   f.dest_uri == new_file.dest_uri for f in files):
+                return _error("Cannot use 2 different swagger files with "
+                              "same filename in same page.")
+
+            files.append(new_file)
+
         markdown = pre_token + TEMPLATE.substitute(
-            path=url, swagger_lib_js=config.javascript, swagger_lib_css=config.css
+            path=url, swagger_lib_js=self.config.javascript,
+            swagger_lib_css=self.config.css
         ) + post_token
 
         # If multiple swaggers exist.

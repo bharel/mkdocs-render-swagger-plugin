@@ -1,12 +1,13 @@
 import os
+import shutil
 import tempfile
-import mkdocs
-from mkdocs.config import Config
-from mkdocs.structure.files import File
 import unittest
-from mkdocs.structure.pages import Page
 from yaml import dump
-
+import pathlib
+import subprocess
+import render_swagger
+from mkdocs.structure.pages import Page
+from mkdocs.structure.files import File
 
 DEFAULT_CONFIG = {
     "site_name": 'My Site',
@@ -20,70 +21,246 @@ DEFAULT_CONFIG = {
 
 def render_markdown(markdown, config_options=None):
     # Create a temporary directory for the Mkdocs site
-    config_options = config_options or {}
     with tempfile.TemporaryDirectory() as temp_dir:
+
+        temp_dir = pathlib.Path(temp_dir)
+
+        # Create a mock Mkdocs docs directory
+        docs = temp_dir / "docs"
+        docs.mkdir(exist_ok=True)
+
         # Create a mock Mkdocs config
-        config = Config([])
-        config.load_dict(dict(
-            site_name='My Site',
-            theme={
-                'name': 'mkdocs',
-                'custom_dir': 'custom_theme',
-                'static_templates': ['404.html']
-            },
-            extra_javascript=[js] if (
-                js := config_options.pop('extra_javascript', None)) else [],
-            extra_css=[css] if (
-                css := config_options.pop('extra_css', None)) else [],
-            plugins=[{'render_swagger': config_options or {}}],
-        ))
+        config = DEFAULT_CONFIG.copy()
+        if config_options:
+            config["plugins"][0]["render_swagger"].update(config_options)
 
-        # Create a mock Mkdocs page
-        page = Page(title='My Page', file=File(
-            'my_page.md', temp_dir, temp_dir, False), config=config)
+        with (temp_dir / "mkdocs.yml").open("w") as f:
+            dump(config, f)
 
-        # # Create a mock Mkdocs TOC
-        # toc = Toc([
-        #     {'title': 'Home', 'url': 'index.html', 'children': []},
-        #     {'title': 'My Page', 'url': 'my_page.html', 'children': []}
-        # ])
+        # Create a mock Markdown file
+        with (docs / "index.md").open("w") as f:
+            f.write(markdown)
 
-        # Create a mock Mkdocs files collection
-        files = {
-            'index.md': '',
-            'my_page.md': markdown
-        }
+        # Copy all samples to the mock docs directory
+        samples = pathlib.Path(__file__).parent / "samples"
+        shutil.copytree(samples, docs, dirs_exist_ok=True)
 
-        # # Create a mock Mkdocs site navigation
-        # nav = mkdocs.structure.nav.Navigation(
-        #     pages=[page],
-        #     config=config,
-        #     files=files,
-        #     toc=toc
-        # )
+        # Run Mkdocs
+        process = subprocess.run(["mkdocs", "build"], cwd=temp_dir,
+                                 capture_output=True)
+        assert process.returncode == 0, process.stderr.decode()
 
-        # Create a mock Mkdocs site
-        site = mkdocs.structure.site.Site(
-            config=config,
-            files=files,
-            pages=[page],
-            nav=nav,
-            theme=mkdocs.themes.get_theme_instance(config),
-            template_context={},
-            use_directory_urls=False
+        # Read the rendered HTML
+        return (temp_dir / "site" / "index.html").read_text()
+
+
+class FullRenderTestCase(unittest.TestCase):
+    def test_sanity(self):
+        result = render_markdown(r"!!swagger openapi_3.0.yml!!")
+        expected = """<p><link type="text/css" rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"></p>
+<div id="swagger-ui">
+</div>
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" charset="UTF-8"></script>
+<script>
+    SwaggerUIBundle({
+      url: 'openapi_3.0.yml',
+      dom_id: '#swagger-ui',
+    })
+</script>""".strip()  # noqa: E501
+        self.assertIn(expected, result)
+
+    def test_sanity_http(self):
+        result = render_markdown(
+            r"!!swagger-http https://petstore.swagger.io/v2/swagger.json!!")
+        expected = """<p><link type="text/css" rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"></p>
+<div id="swagger-ui">
+</div>
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" charset="UTF-8"></script>
+<script>
+    SwaggerUIBundle({
+      url: 'https://petstore.swagger.io/v2/swagger.json',
+      dom_id: '#swagger-ui',
+    })
+</script>""".strip()  # noqa: E501
+        self.assertIn(expected, result)
+
+    def test_sanity_http_with_config(self):
+        result = render_markdown(
+            r"!!swagger-http https://petstore.swagger.io/v2/swagger.json!!",
+            config_options={
+                "javascript":
+                    "https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js"
+            }
         )
 
-        # Build the Mkdocs site
-        mkdocs.commands.build.build(config, dump_config=False, clean_site_dir=False,
-                                    strict=False, use_directory_urls=False, site_dir=temp_dir)
+        expected = """<p><link type="text/css" rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"></p>
+<div id="swagger-ui">
+</div>
+<script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
+<script>
+    SwaggerUIBundle({
+      url: 'https://petstore.swagger.io/v2/swagger.json',
+      dom_id: '#swagger-ui',
+    })
+</script>""".strip()  # noqa: E501
+        self.assertIn(expected, result)
 
-        # Render the page and return the HTML output
-        with open(os.path.join(temp_dir, page.url), 'r') as f:
-            html = f.read()
-
-    return html
 
 class SwaggerPluginTestCase(unittest.TestCase):
-    def test_sanity(self):
-        result = render_markdown("")
+    def setUp(self):
+        self.plugin = render_swagger.SwaggerPlugin()
+        self.config = render_swagger.SwaggerConfig()
+        self.page = Page("index.md", File("index.md", "samples", "samples", False),
+                         {})
 
+    def setConfig(self, config=None):
+        config = config or {}
+        self.plugin.load_config(options=config)
+        self.plugin.on_config({})
+
+    def test_sanity(self):
+        self.setConfig({})
+        files = []
+        result = self.plugin.on_page_markdown(
+            r"!!swagger openapi_3.0.yml!!", self.page, DEFAULT_CONFIG, files)
+        expected = render_swagger.TEMPLATE.substitute(
+            path="openapi_3.0.yml",
+            swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
+            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'])
+        self.assertEqual(expected.strip(), result.strip())
+
+    def test_sanity_http(self):
+        self.setConfig({})
+        result = self.plugin.on_page_markdown(
+            r"!!swagger-http https://petstore.swagger.io/v2/swagger.json!!",
+            self.page, DEFAULT_CONFIG, [])
+        expected = render_swagger.TEMPLATE.substitute(
+            path="https://petstore.swagger.io/v2/swagger.json",
+            swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
+            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'])
+        self.assertEqual(expected.strip(), result.strip())
+
+    def test_javascript_config(self):
+        self.setConfig({
+            "javascript": "https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js"
+        })
+        result = self.plugin.on_page_markdown(
+            r"!!swagger-http https://petstore.swagger.io/v2/swagger.json!!",
+            self.page, DEFAULT_CONFIG, [])
+        expected = render_swagger.TEMPLATE.substitute(
+            path="https://petstore.swagger.io/v2/swagger.json",
+            swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
+            swagger_lib_js="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js")
+        self.assertEqual(expected.strip(), result.strip())
+
+    def test_css_config(self):
+        self.setConfig({
+            "css": "https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui.css"
+        })
+        result = self.plugin.on_page_markdown(
+            r"!!swagger-http https://petstore.swagger.io/v2/swagger.json!!",
+            self.page, DEFAULT_CONFIG, [])
+        expected = render_swagger.TEMPLATE.substitute(
+            path="https://petstore.swagger.io/v2/swagger.json",
+            swagger_lib_css="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui.css",
+            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'])
+        self.assertEqual(expected.strip(), result.strip())
+
+    def test_allow_arbitrary_locations(self):
+        self.setConfig({
+            "allow_arbitrary_locations": True
+        })
+        files = []
+        result = self.plugin.on_page_markdown(
+            r"!!swagger ../arbitrary_sample/openapi.yml!!",
+            self.page, DEFAULT_CONFIG, files)
+        expected = render_swagger.TEMPLATE.substitute(
+            path="openapi.yml",
+            swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
+            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'])
+        self.assertEqual(expected.strip(), result.strip())
+        file_ = files[0]
+        self.assertEqual(file_.abs_src_path, "arbitrary_sample/openapi.yml")
+        self.assertEqual(file_.src_path, "openapi.yml")
+        self.assertEqual(file_.abs_dest_path, "samples/openapi.yml")
+
+    def test_disallow_arbitrary_locations(self):
+        self.setConfig({
+            "allow_arbitrary_locations": False
+        })
+        files = []
+        result = self.plugin.on_page_markdown(
+            r"!!swagger ../arbitrary_sample/openapi.yml!!",
+            self.page, DEFAULT_CONFIG, files)
+        self.assertIn("Arbitrary locations are not allowed ", result)
+
+    def test_nonexisting_file(self):
+        self.setConfig({})
+        files = []
+        result = self.plugin.on_page_markdown(
+            r"!!swagger nonexisting.yml!!",
+            self.page, DEFAULT_CONFIG, files)
+        self.assertIn("File nonexisting.yml not found", result)
+
+    def test_usage(self):
+        self.setConfig({})
+        files = []
+        result = self.plugin.on_page_markdown(
+            r"!!swagger!!",
+            self.page, DEFAULT_CONFIG, files)
+        self.assertIn("!! SWAGGER ERROR: Usage:", result)
+
+    def test_two_files_same_name(self):
+        self.setConfig({
+            "allow_arbitrary_locations": True
+        })
+        files = [
+            File("openapi.yml", "samples", "samples", False),
+        ]
+        result = self.plugin.on_page_markdown(
+            r"!!swagger ../arbitrary_sample/openapi.yml!!",
+            self.page, DEFAULT_CONFIG, files)
+        self.assertIn("Cannot use 2 different swagger files", result)
+
+    # Is this ok? It loads the JS and CSS twice.
+    def test_two_swaggers_same_page(self):
+        self.setConfig({
+            "allow_arbitrary_locations": True
+        })
+        files = []
+        result = self.plugin.on_page_markdown(
+            "!!swagger openapi_3.0.yml!!\n"
+            "\n!!swagger ../arbitrary_sample/openapi.yml!!",
+            self.page, DEFAULT_CONFIG, files)
+        expected = (render_swagger.TEMPLATE.substitute(
+            path="openapi_3.0.yml",
+            swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
+            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js']) +
+            "\n\n" +
+            render_swagger.TEMPLATE.substitute(
+                path="openapi.yml",
+                swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
+                swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js']))
+        self.assertEqual(expected.strip(), result.strip())
+
+    def test_backwards_compatability_js_css(self):
+        self.plugin.load_config(options={})
+
+        with self.assertWarns(FutureWarning) as cm:
+            self.plugin.on_config({
+                "extra_javascript": ["test/swagger-ui-bundle.js"],
+                "extra_css": ["test/swagger-ui.css"]})
+
+        self.assertIn(
+            "Please use the javascript configuration option for "
+            "mkdocs-render-swagger-plugin instead of extra_javascript.",
+            cm.warnings[0].message.args[0])
+
+        self.assertIn(
+            "Please use the css configuration option for "
+            "mkdocs-render-swagger-plugin instead of extra_css.",
+            cm.warnings[1].message.args[0])
+
+        self.assertEqual(self.plugin.config.javascript,
+                         "test/swagger-ui-bundle.js")
+        self.assertEqual(self.plugin.config.css, "test/swagger-ui.css")
