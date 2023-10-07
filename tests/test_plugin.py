@@ -116,7 +116,7 @@ class SwaggerPluginTestCase(unittest.TestCase):
         self._id_patcher = unittest.mock.patch(
             'render_swagger.generate_id', return_value="swagger-ui")
         self.generate_id = self._id_patcher.start()
-    
+
     def tearDown(self):
         self._id_patcher.stop()
 
