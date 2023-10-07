@@ -8,6 +8,7 @@ import subprocess
 import render_swagger
 import unittest.mock
 from mkdocs.structure.pages import Page
+from typing import Optional
 from mkdocs.structure.files import File
 
 DEFAULT_CONFIG = {
@@ -20,7 +21,8 @@ DEFAULT_CONFIG = {
 }
 
 
-def render_markdown(markdown: str, config_options: dict | None = None) -> str:
+def render_markdown(markdown: str, config_options: Optional[dict] = None
+                    ) -> str:
     """Render a Markdown string using Mkdocs.
     
     Args:
