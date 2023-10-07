@@ -1,3 +1,4 @@
+import os
 import shutil
 import tempfile
 import unittest
@@ -55,6 +56,16 @@ def render_markdown(markdown, config_options=None):
 
 
 class FullRenderTestCase(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cwd = pathlib.Path(__file__).parent
+        cls.old_cwd = pathlib.Path.cwd()
+        os.chdir(cwd)
+
+    @classmethod
+    def tearDownClass(cls):
+        os.chdir(cls.old_cwd)
+
     def test_sanity(self):
         result = render_markdown(r"!!swagger openapi_3.0.yml!!")
         expected = """<p><link type="text/css" rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"></p>
@@ -107,6 +118,17 @@ class FullRenderTestCase(unittest.TestCase):
 
 
 class SwaggerPluginTestCase(unittest.TestCase):
+    
+    @classmethod
+    def setUpClass(cls):
+        cwd = pathlib.Path(__file__).parent
+        cls.old_cwd = pathlib.Path.cwd()
+        os.chdir(cwd)
+
+    @classmethod
+    def tearDownClass(cls):
+        os.chdir(cls.old_cwd)
+
     def setUp(self):
         self.plugin = render_swagger.SwaggerPlugin()
         self.config = render_swagger.SwaggerConfig()
