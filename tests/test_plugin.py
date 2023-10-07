@@ -298,8 +298,9 @@ class SwaggerPluginTestCase(unittest.TestCase):
 
         with self.assertWarns(FutureWarning) as cm:
             self.plugin.on_config({
-                "extra_javascript": ["test/swagger-ui-bundle.js"],
-                "extra_css": ["test/swagger-ui.css"]})
+                "extra_javascript": [
+                    "unrelated.js", "test/swagger-ui-bundle.js"],
+                "extra_css": ["unrelated.css", "test/swagger-ui.css"]})
 
         self.assertIn(
             "Please use the javascript configuration option for "
@@ -314,3 +315,9 @@ class SwaggerPluginTestCase(unittest.TestCase):
         self.assertEqual(self.plugin.config.javascript,
                          "test/swagger-ui-bundle.js")
         self.assertEqual(self.plugin.config.css, "test/swagger-ui.css")
+
+
+class SwaggerMiscTestCase(unittest.TestCase):
+    def test_id_generation(self):
+        self.assertNotEqual(render_swagger.generate_id(),
+                            render_swagger.generate_id())
