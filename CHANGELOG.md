@@ -24,3 +24,9 @@ straightforward as possible.
 ### Added
 
 - [https://github.com/bharel/mkdocs-render-swagger-plugin/pull/24] Now supporting OpenAPI 3.0
+
+## [0.0.4] - 2022-08-04
+
+### Fixed
+
+- Removed `ui` local variable as it conflicts with existing JS.
