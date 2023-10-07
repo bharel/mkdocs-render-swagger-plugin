@@ -1,4 +1,3 @@
-import os
 import shutil
 import tempfile
 import unittest
@@ -90,7 +89,7 @@ class FullRenderTestCase(unittest.TestCase):
             r"!!swagger-http https://petstore.swagger.io/v2/swagger.json!!",
             config_options={
                 "javascript":
-                    "https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js"
+                    "https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js"  # noqa: E501
             }
         )
 
@@ -111,7 +110,8 @@ class SwaggerPluginTestCase(unittest.TestCase):
     def setUp(self):
         self.plugin = render_swagger.SwaggerPlugin()
         self.config = render_swagger.SwaggerConfig()
-        self.page = Page("index.md", File("index.md", "samples", "samples", False),
+        self.page = Page("index.md", File("index.md", "samples",
+                                          "samples", False),
                          {})
         self._id_patcher = unittest.mock.patch(
             'render_swagger.generate_id', return_value="swagger-ui")
@@ -151,7 +151,7 @@ class SwaggerPluginTestCase(unittest.TestCase):
 
     def test_javascript_config(self):
         self.setConfig({
-            "javascript": "https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js"
+            "javascript": "https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js"  # noqa: E501
         })
         result = self.plugin.on_page_markdown(
             r"!!swagger-http https://petstore.swagger.io/v2/swagger.json!!",
@@ -159,20 +159,20 @@ class SwaggerPluginTestCase(unittest.TestCase):
         expected = render_swagger.TEMPLATE.substitute(
             path="https://petstore.swagger.io/v2/swagger.json",
             swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
-            swagger_lib_js="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js",
+            swagger_lib_js="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js",  # noqa: E501
             id="swagger-ui")
         self.assertEqual(expected.strip(), result.strip())
 
     def test_css_config(self):
         self.setConfig({
-            "css": "https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui.css"
+            "css": "https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui.css"  # noqa: E501
         })
         result = self.plugin.on_page_markdown(
             r"!!swagger-http https://petstore.swagger.io/v2/swagger.json!!",
             self.page, DEFAULT_CONFIG, [])
         expected = render_swagger.TEMPLATE.substitute(
             path="https://petstore.swagger.io/v2/swagger.json",
-            swagger_lib_css="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui.css",
+            swagger_lib_css="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui.css",  # noqa: E501
             swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'],
             id="swagger-ui")
         self.assertEqual(expected.strip(), result.strip())
