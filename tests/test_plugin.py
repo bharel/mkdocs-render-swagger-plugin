@@ -118,7 +118,7 @@ class FullRenderTestCase(unittest.TestCase):
 
 
 class SwaggerPluginTestCase(unittest.TestCase):
-    
+
     @classmethod
     def setUpClass(cls):
         cwd = pathlib.Path(__file__).parent
