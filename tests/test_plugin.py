@@ -20,7 +20,16 @@ DEFAULT_CONFIG = {
 }
 
 
-def render_markdown(markdown, config_options=None):
+def render_markdown(markdown: str, config_options: dict | None = None) -> str:
+    """Render a Markdown string using Mkdocs.
+    
+    Args:
+        markdown: The Markdown to render.
+        config_options: A dictionary of Mkdocs config options.
+
+    Returns:
+        The rendered HTML.
+    """
     # Create a temporary directory for the Mkdocs site
     with tempfile.TemporaryDirectory() as temp_dir:
 
