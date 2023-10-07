@@ -225,9 +225,11 @@ class SwaggerPluginTestCase(unittest.TestCase):
             id="swagger-ui")
         self.assertEqual(expected.strip(), result.strip())
         file_ = files[0]
-        self.assertEqual(file_.abs_src_path, "arbitrary_sample/openapi.yml")
+        self.assertEqual(file_.abs_src_path,
+                         os.path.join("arbitrary_sample", "openapi.yml"))
         self.assertEqual(file_.src_path, "openapi.yml")
-        self.assertEqual(file_.abs_dest_path, "samples/openapi.yml")
+        self.assertEqual(file_.abs_dest_path,
+                         os.path.join("samples", "openapi.yml"))
 
     def test_disallow_arbitrary_locations(self):
         self.setConfig({
