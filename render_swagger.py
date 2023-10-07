@@ -9,6 +9,7 @@ import mkdocs.plugins
 from mkdocs.config import config_options
 from mkdocs.config.base import Config as MkDocsConfig
 from mkdocs.structure.files import File
+from secrets import token_urlsafe
 
 __version__ = "0.1.1"
 
@@ -20,17 +21,26 @@ USAGE_MSG = (
 TEMPLATE = string.Template("""
 
 <link type="text/css" rel="stylesheet" href="$swagger_lib_css">
-<div id="swagger-ui">
+<div id="$id">
 </div>
 <script src="$swagger_lib_js" charset="UTF-8"></script>
 <script>
     SwaggerUIBundle({
       url: '$path',
-      dom_id: '#swagger-ui',
+      dom_id: '#$id',
     })
 </script>
 
 """)
+
+
+def generate_id():
+    generate_id.counter += 1
+    return f"swagger-ui-{generate_id.counter}"
+
+
+generate_id.counter = 0
+
 
 ERROR_TEMPLATE = string.Template("!! SWAGGER ERROR: $error !!")
 
@@ -147,7 +157,7 @@ class SwaggerPlugin(mkdocs.plugins.BasePlugin[SwaggerConfig]):
 
         markdown = pre_token + TEMPLATE.substitute(
             path=url, swagger_lib_js=self.config.javascript,
-            swagger_lib_css=self.config.css
+            swagger_lib_css=self.config.css, id=generate_id()
         ) + post_token
 
         # If multiple swaggers exist.

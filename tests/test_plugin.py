@@ -6,6 +6,7 @@ from yaml import dump
 import pathlib
 import subprocess
 import render_swagger
+import unittest.mock
 from mkdocs.structure.pages import Page
 from mkdocs.structure.files import File
 
@@ -58,13 +59,13 @@ class FullRenderTestCase(unittest.TestCase):
     def test_sanity(self):
         result = render_markdown(r"!!swagger openapi_3.0.yml!!")
         expected = """<p><link type="text/css" rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"></p>
-<div id="swagger-ui">
+<div id="swagger-ui-1">
 </div>
 <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" charset="UTF-8"></script>
 <script>
     SwaggerUIBundle({
       url: 'openapi_3.0.yml',
-      dom_id: '#swagger-ui',
+      dom_id: '#swagger-ui-1',
     })
 </script>""".strip()  # noqa: E501
         self.assertIn(expected, result)
@@ -73,13 +74,13 @@ class FullRenderTestCase(unittest.TestCase):
         result = render_markdown(
             r"!!swagger-http https://petstore.swagger.io/v2/swagger.json!!")
         expected = """<p><link type="text/css" rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"></p>
-<div id="swagger-ui">
+<div id="swagger-ui-1">
 </div>
 <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" charset="UTF-8"></script>
 <script>
     SwaggerUIBundle({
       url: 'https://petstore.swagger.io/v2/swagger.json',
-      dom_id: '#swagger-ui',
+      dom_id: '#swagger-ui-1',
     })
 </script>""".strip()  # noqa: E501
         self.assertIn(expected, result)
@@ -94,13 +95,13 @@ class FullRenderTestCase(unittest.TestCase):
         )
 
         expected = """<p><link type="text/css" rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css"></p>
-<div id="swagger-ui">
+<div id="swagger-ui-1">
 </div>
 <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js" charset="UTF-8"></script>
 <script>
     SwaggerUIBundle({
       url: 'https://petstore.swagger.io/v2/swagger.json',
-      dom_id: '#swagger-ui',
+      dom_id: '#swagger-ui-1',
     })
 </script>""".strip()  # noqa: E501
         self.assertIn(expected, result)
@@ -112,6 +113,12 @@ class SwaggerPluginTestCase(unittest.TestCase):
         self.config = render_swagger.SwaggerConfig()
         self.page = Page("index.md", File("index.md", "samples", "samples", False),
                          {})
+        self._id_patcher = unittest.mock.patch(
+            'render_swagger.generate_id', return_value="swagger-ui")
+        self.generate_id = self._id_patcher.start()
+    
+    def tearDown(self):
+        self._id_patcher.stop()
 
     def setConfig(self, config=None):
         config = config or {}
@@ -126,7 +133,8 @@ class SwaggerPluginTestCase(unittest.TestCase):
         expected = render_swagger.TEMPLATE.substitute(
             path="openapi_3.0.yml",
             swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
-            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'])
+            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'],
+            id="swagger-ui")
         self.assertEqual(expected.strip(), result.strip())
 
     def test_sanity_http(self):
@@ -137,7 +145,8 @@ class SwaggerPluginTestCase(unittest.TestCase):
         expected = render_swagger.TEMPLATE.substitute(
             path="https://petstore.swagger.io/v2/swagger.json",
             swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
-            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'])
+            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'],
+            id="swagger-ui")
         self.assertEqual(expected.strip(), result.strip())
 
     def test_javascript_config(self):
@@ -150,7 +159,8 @@ class SwaggerPluginTestCase(unittest.TestCase):
         expected = render_swagger.TEMPLATE.substitute(
             path="https://petstore.swagger.io/v2/swagger.json",
             swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
-            swagger_lib_js="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js")
+            swagger_lib_js="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js",
+            id="swagger-ui")
         self.assertEqual(expected.strip(), result.strip())
 
     def test_css_config(self):
@@ -163,7 +173,8 @@ class SwaggerPluginTestCase(unittest.TestCase):
         expected = render_swagger.TEMPLATE.substitute(
             path="https://petstore.swagger.io/v2/swagger.json",
             swagger_lib_css="https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui.css",
-            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'])
+            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'],
+            id="swagger-ui")
         self.assertEqual(expected.strip(), result.strip())
 
     def test_allow_arbitrary_locations(self):
@@ -177,7 +188,8 @@ class SwaggerPluginTestCase(unittest.TestCase):
         expected = render_swagger.TEMPLATE.substitute(
             path="openapi.yml",
             swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
-            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'])
+            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'],
+            id="swagger-ui")
         self.assertEqual(expected.strip(), result.strip())
         file_ = files[0]
         self.assertEqual(file_.abs_src_path, "arbitrary_sample/openapi.yml")
@@ -228,6 +240,7 @@ class SwaggerPluginTestCase(unittest.TestCase):
             "allow_arbitrary_locations": True
         })
         files = []
+        self.generate_id.side_effect = ["swagger-ui-1", "swagger-ui-2"]
         result = self.plugin.on_page_markdown(
             "!!swagger openapi_3.0.yml!!\n"
             "\n!!swagger ../arbitrary_sample/openapi.yml!!",
@@ -235,12 +248,14 @@ class SwaggerPluginTestCase(unittest.TestCase):
         expected = (render_swagger.TEMPLATE.substitute(
             path="openapi_3.0.yml",
             swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
-            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js']) +
+            swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'],
+            id="swagger-ui-1") +
             "\n\n" +
             render_swagger.TEMPLATE.substitute(
                 path="openapi.yml",
                 swagger_lib_css=render_swagger.DEFAULT_SWAGGER_LIB['css'],
-                swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js']))
+                swagger_lib_js=render_swagger.DEFAULT_SWAGGER_LIB['js'],
+                id="swagger-ui-2"))
         self.assertEqual(expected.strip(), result.strip())
 
     def test_backwards_compatability_js_css(self):
