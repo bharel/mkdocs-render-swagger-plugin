@@ -1,0 +1,6 @@
+site_name: My Docs
+
+plugins:
+  - render_swagger:
+      allow_arbitrary_locations : true
+      javascript: https://cdn.jsdelivr.net/npm/swagger-ui-dist/swagger-ui-standalone-preset.js
