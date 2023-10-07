@@ -24,7 +24,7 @@ DEFAULT_CONFIG = {
 def render_markdown(markdown: str, config_options: Optional[dict] = None
                     ) -> str:
     """Render a Markdown string using Mkdocs.
-    
+
     Args:
         markdown: The Markdown to render.
         config_options: A dictionary of Mkdocs config options.
