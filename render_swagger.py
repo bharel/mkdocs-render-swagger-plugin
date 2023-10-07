@@ -9,7 +9,6 @@ import mkdocs.plugins
 from mkdocs.config import config_options
 from mkdocs.config.base import Config as MkDocsConfig
 from mkdocs.structure.files import File
-from secrets import token_urlsafe
 
 __version__ = "0.1.1"
 
