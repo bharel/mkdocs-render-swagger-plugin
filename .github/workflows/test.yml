@@ -34,9 +34,9 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -e ".[dev,dotenv]"
+        pip install -e ".[dev]"
     - name: Test on Python ${{ matrix.python-version }}
-      run: python -m coverage run --branch tests.py && coverage xml
+      run: python -m coverage run --branch -m unittest tests && coverage xml
     - name: Upload Coverage to Codecov
       uses: codecov/codecov-action@v3
       with:
