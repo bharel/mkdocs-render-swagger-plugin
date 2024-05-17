@@ -64,6 +64,7 @@ def swagger_lib(config) -> dict:
     extra_javascript = config.get('extra_javascript', [])
     extra_css = config.get('extra_css', [])
     for lib in extra_javascript:
+        lib = str(lib)  # Can be an instance of ExtraScriptValue
         if os.path.basename(
                 urllib.parse.urlparse(lib).path) == 'swagger-ui-bundle.js':
             import warnings
