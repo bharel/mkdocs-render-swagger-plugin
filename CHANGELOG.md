@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
  
 ## [Unreleased] - yyyy-mm-dd
 
+## [0.1.2] - 2024-05-26
+
+### Fixed
+
+- [https://github.com/bharel/mkdocs-render-swagger-plugin/pull/30] Supports MKDocs 1.5.2+
+
 ## [0.1.1] - 2023-10-07
  
 ### Added
