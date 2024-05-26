@@ -10,7 +10,7 @@ from mkdocs.config import config_options
 from mkdocs.config.base import Config as MkDocsConfig
 from mkdocs.structure.files import File
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 USAGE_MSG = (
     "Usage: '!!swagger <filename>!!' or '!!swagger-http <url>!!'. "
